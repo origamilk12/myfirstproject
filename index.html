@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Flappy Bat 🎃</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: linear-gradient(#0d0d0d, #1a001a);
+    font-family: 'Creepster', cursive;
+  }
+
+  canvas {
+    display: block;
+    margin: 0 auto;
+    background: url('https://i.ibb.co/pzj7yM5/halloween-bg.png') repeat-x;
+    background-size: cover;
+  }
+
+  #game-over {
+    position: absolute;
+    top: 35%;
+    width: 100%;
+    text-align: center;
+    color: #ff6600;
+    font-size: 48px;
+    text-shadow: 2px 2px 8px black;
+    display: none;
+  }
+
+  #restart {
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    text-align: center;
+    color: white;
+    font-size: 24px;
+    display: none;
+    cursor: pointer;
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
+</style>
+</head>
+<body>
+<canvas id="gameCanvas" width="480" height="640"></canvas>
+<div id="game-over">💀 Game Over 💀</div>
+<div id="restart">Click or Press Space to Restart</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let batImg = new Image();
+batImg.src = "https://i.ibb.co/9ZJ7wJ4/bat.png"; // transparent bat sprite
+
+let pumpkinImg = new Image();
+pumpkinImg.src = "https://i.ibb.co/GpxjKKL/pumpkin.png"; // pumpkin pipe top
+let pumpkinImg2 = new Image();
+pumpkinImg2.src = "https://i.ibb.co/mczHq9N/pumpkin2.png"; // bottom pumpkin
+
+let bat = { x: 80, y: 150, width: 48, height: 36, gravity: 0.25, lift: -5, velocity: 0 };
+let pipes = [];
+let frame = 0;
+let score = 0;
+let gameOver = false;
+
+function resetGame() {
+  bat.y = 150;
+  bat.velocity = 0;
+  pipes = [];
+  frame = 0;
+  score = 0;
+  gameOver = false;
+  document.getElementById('game-over').style.display = 'none';
+  document.getElementById('restart').style.display = 'none';
+}
+
+function drawBat() {
+  ctx.drawImage(batImg, bat.x, bat.y, bat.width, bat.height);
+}
+
+function drawPipes() {
+  for (let pipe of pipes) {
+    ctx.drawImage(pumpkinImg, pipe.x, pipe.topY, 60, 320);
+    ctx.drawImage(pumpkinImg2, pipe.x, pipe.bottomY, 60, 320);
+  }
+}
+
+function drawScore() {
+  ctx.fillStyle = "#ff6600";
+  ctx.font = "32px Creepster";
+  ctx.fillText(`Score: ${score}`, 20, 50);
+}
+
+function updatePipes() {
+  if (frame % 90 === 0) {
+    let gap = 140;
+    let topHeight = Math.random() * 250 + 50;
+    pipes.push({
+      x: canvas.width,
+      topY: topHeight - 320,
+      bottomY: topHeight + gap,
+    });
+  }
+
+  for (let i = pipes.length - 1; i >= 0; i--) {
+    pipes[i].x -= 2;
+    if (pipes[i].x + 60 < 0) {
+      pipes.splice(i, 1);
+      score++;
+    }
+  }
+}
+
+function detectCollision() {
+  if (bat.y + bat.height >= canvas.height || bat.y <= 0) return true;
+
+  for (let pipe of pipes) {
+    if (
+      bat.x < pipe.x + 60 &&
+      bat.x + bat.width > pipe.x &&
+      (bat.y < pipe.topY + 320 || bat.y + bat.height > pipe.bottomY)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function drawBackground() {
+  ctx.fillStyle = "#0d0d0d";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function gameLoop() {
+  if (gameOver) return;
+
+  frame++;
+  bat.velocity += bat.gravity;
+  bat.y += bat.velocity;
+
+  updatePipes();
+
+  drawBackground();
+  drawPipes();
+  drawBat();
+  drawScore();
+
+  if (detectCollision()) {
+    gameOver = true;
+    document.getElementById('game-over').style.display = 'block';
+    document.getElementById('restart').style.display = 'block';
+  } else {
+    requestAnimationFrame(gameLoop);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') {
+    if (gameOver) {
+      resetGame();
+      gameLoop();
+    } else {
+      bat.velocity = bat.lift;
+    }
+  }
+});
+
+canvas.addEventListener('click', () => {
+  if (gameOver) {
+    resetGame();
+    gameLoop();
+  } else {
+    bat.velocity = bat.lift;
+  }
+});
+
+window.onload = () => {
+  gameLoop();
+};
+</script>
+</body>
+</html>
