@@ -192,14 +192,14 @@
         let score = 0;
         let frames = 0;
         
-        // Bat properties
+        // Bat properties - adjusted for slower movement
         const bat = {
             x: 50,
             y: canvas.height / 2 - 10,
-            width: 40,
-            height: 30,
-            gravity: 0.5,
-            lift: -5,
+            width: 30,  // Slightly smaller for easier navigation
+            height: 20,
+            gravity: 0.3,  // Reduced gravity for slower fall
+            lift: -8,      // Reduced lift for less dramatic jumps
             velocity: 0,
             
             draw: function() {
@@ -212,15 +212,15 @@
                 // Draw bat wings
                 ctx.fillStyle = '#222';
                 ctx.beginPath();
-                ctx.ellipse(this.x - 10, this.y, 15, 10, Math.PI/4, 0, Math.PI * 2);
-                ctx.ellipse(this.x + 10, this.y, 15, 10, -Math.PI/4, 0, Math.PI * 2);
+                ctx.ellipse(this.x - 8, this.y, 12, 8, Math.PI/4, 0, Math.PI * 2);
+                ctx.ellipse(this.x + 8, this.y, 12, 8, -Math.PI/4, 0, Math.PI * 2);
                 ctx.fill();
                 
                 // Draw bat eyes
                 ctx.fillStyle = '#ff6600';
                 ctx.beginPath();
-                ctx.arc(this.x - 8, this.y - 5, 4, 0, Math.PI * 2);
-                ctx.arc(this.x + 8, this.y - 5, 4, 0, Math.PI * 2);
+                ctx.arc(this.x - 6, this.y - 4, 3, 0, Math.PI * 2);
+                ctx.arc(this.x + 6, this.y - 4, 3, 0, Math.PI * 2);
                 ctx.fill();
             },
             
@@ -243,16 +243,26 @@
             
             flap: function() {
                 this.velocity = this.lift;
+            },
+            
+            // Get bounding box for collision detection
+            getBounds: function() {
+                return {
+                    left: this.x - this.width/2,
+                    right: this.x + this.width/2,
+                    top: this.y - this.height/2,
+                    bottom: this.y + this.height/2
+                };
             }
         };
         
         // Pumpkin obstacles (pipes)
         const pumpkins = [];
-        const pumpkinWidth = 60;
-        const gap = 130;
-        const minPumpkinHeight = 50;
+        const pumpkinWidth = 50;  // Slightly narrower for easier navigation
+        const gap = 150;          // Larger gap for easier navigation
+        const minPumpkinHeight = 40;
         const maxPumpkinHeight = 250;
-        let pumpkinSpeed = 2;
+        let pumpkinSpeed = 1.5;   // Slower initial speed
         
         // Draw background elements (moon, stars)
         function drawBackground() {
@@ -339,9 +349,28 @@
             }
         }
         
+        // Improved collision detection
+        function checkCollision(batBounds, pumpkin) {
+            // Get pumpkin bounds
+            const pumpkinBounds = {
+                left: pumpkin.x,
+                right: pumpkin.x + pumpkin.width,
+                top: pumpkin.y,
+                bottom: pumpkin.y + pumpkin.height
+            };
+            
+            // Check if bat and pumpkin overlap
+            return (
+                batBounds.right > pumpkinBounds.left &&
+                batBounds.left < pumpkinBounds.right &&
+                batBounds.bottom > pumpkinBounds.top &&
+                batBounds.top < pumpkinBounds.bottom
+            );
+        }
+        
         // Update pumpkin positions
         function updatePumpkins() {
-            if (frames % 120 === 0) {
+            if (frames % 150 === 0) {  // Less frequent pumpkin generation
                 createPumpkin();
             }
             
@@ -351,17 +380,11 @@
                 // Move pumpkin
                 pumpkin.x -= pumpkinSpeed;
                 
-                // Check collision
-                if (
-                    bat.x + bat.width/2 > pumpkin.x &&
-                    bat.x - bat.width/2 < pumpkin.x + pumpkin.width &&
-                    (
-                        bat.y - bat.height/2 < pumpkin.height ||
-                        bat.y + bat.height/2 > pumpkin.y + pumpkin.height
-                    ) &&
-                    pumpkin.y === 0
-                ) {
+                // Check collision with improved detection
+                const batBounds = bat.getBounds();
+                if (checkCollision(batBounds, pumpkin)) {
                     gameOver();
+                    return;
                 }
                 
                 // Increase score when passing a pumpkin pair
@@ -370,9 +393,9 @@
                     scoreElement.textContent = score;
                     pumpkin.counted = true;
                     
-                    // Increase difficulty
+                    // Gradual difficulty increase
                     if (score % 5 === 0) {
-                        pumpkinSpeed += 0.5;
+                        pumpkinSpeed += 0.2;  // Smaller speed increments
                     }
                 }
                 
@@ -418,7 +441,7 @@
             gameRunning = true;
             score = 0;
             frames = 0;
-            pumpkinSpeed = 2;
+            pumpkinSpeed = 1.5;  // Reset to slower speed
             scoreElement.textContent = score;
             
             // Reset bat position
